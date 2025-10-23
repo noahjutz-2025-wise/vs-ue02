@@ -23,7 +23,7 @@ public class KitchenCounter {
             }
         }
         load++;
-        takeCondition.notify();
+        takeCondition.signal();
         loadLock.unlock();
     }
 
@@ -36,7 +36,7 @@ public class KitchenCounter {
             }
         }
         load--;
-        putCondition.notify();
+        putCondition.signal();
         loadLock.unlock();
     }
 
