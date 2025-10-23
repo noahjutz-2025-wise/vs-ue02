@@ -11,6 +11,7 @@ public class Student implements Runnable {
     public void run() {
         while (true) {
             counter.take();
+            IO.println("[" + name + "] take (load=" + counter.getLoad() + ")");
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {

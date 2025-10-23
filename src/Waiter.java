@@ -11,6 +11,7 @@ public class Waiter implements Runnable {
     public void run() {
         while (true) {
             counter.put();
+            IO.println("[" + name + "] put (load=" + counter.getLoad() + ")");
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {

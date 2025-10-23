@@ -39,4 +39,8 @@ public class KitchenCounter {
         putCondition.notify();
         loadLock.unlock();
     }
+
+    public int getLoad() {
+        return load;
+    }
 }
