@@ -9,6 +9,12 @@ public class Student implements Runnable {
 
     @Override
     public void run() {
-        // TODO
+        while (true) {
+            counter.take();
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+            }
+        }
     }
 }

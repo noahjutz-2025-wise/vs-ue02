@@ -9,6 +9,12 @@ public class Waiter implements Runnable {
 
     @Override
     public void run() {
-        // TODO
+        while (true) {
+            counter.put();
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+            }
+        }
     }
 }
