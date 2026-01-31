@@ -1,7 +1,10 @@
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Random;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import javax.swing.*;
 
 public class Browser extends JFrame implements ActionListener {
@@ -11,7 +14,7 @@ public class Browser extends JFrame implements ActionListener {
 
   // Deklaration Ihrer Synchronisations-Hilfsklassen hier:
   private final CountDownLatch startLatch;
-  private final CountDownLatch stopLatch;
+  private final CyclicBarrier stopLatch;
 
   public Browser(int downloads) {
     super("Mein Download-Browser");
@@ -22,7 +25,12 @@ public class Browser extends JFrame implements ActionListener {
     JPanel zeilen = new JPanel(new GridLayout(downloads, 1));
 
     startLatch = new CountDownLatch(1);
-    stopLatch = new CountDownLatch(this.downloads);
+    stopLatch =
+        new CyclicBarrier(
+            this.downloads,
+            () -> {
+              startButton.setText("DONE");
+            });
     for (int i = 0; i < downloads; i++) {
       JPanel reihe = new JPanel(new FlowLayout(FlowLayout.LEADING, 0, 10));
       balken[i] = new JProgressBar(0, 100);
@@ -33,8 +41,30 @@ public class Browser extends JFrame implements ActionListener {
       // neue Download-Threads erzeugen und starten
       // ggf. müssen Synchronisations-Objekte im Konstruktor übergeben werden!!
       // balken ist ebenfalls zu übergeben!
-      new Thread(new Download(balken[i], startLatch, stopLatch)).start();
+      // new Thread(new Download(balken[i], startLatch, stopLatch)).start();
       balken[i].setValue(1);
+      final int _i = i;
+      var t =
+          new Thread(
+              () -> {
+                try {
+                  startLatch.await();
+                } catch (InterruptedException e) {
+                  throw new RuntimeException(e);
+                }
+                for (int j = 0; j <= 100; j++) {
+                  try {
+                    Thread.sleep(new Random().nextInt(100));
+                  } catch (InterruptedException _) {
+                  }
+                  balken[_i].setValue(j);
+                }
+                try {
+                  stopLatch.await();
+                } catch (InterruptedException | BrokenBarrierException _) {
+                }
+              });
+      t.start();
     }
 
     startButton = new JButton("Downloads starten");
@@ -63,15 +93,7 @@ public class Browser extends JFrame implements ActionListener {
 
     // Auf Ende aller Download-Threads warten ... erst dann die Beschriftung ändern
     // Achtung, damit die Oberflaeche "reaktiv" bleibt dies in einem eigenen Runnable ausfuehren!
-    new Thread(
-            () -> {
-              try {
-                stopLatch.await();
-              } catch (InterruptedException ex) {
-                throw new RuntimeException(ex);
-              }
-              startButton.setText("ENDE");
-            })
-        .start();
+
+    // implemented in CyclicBarrier constructor, see above
   }
 }
