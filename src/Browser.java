@@ -1,78 +1,77 @@
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.concurrent.CountDownLatch;
+import javax.swing.*;
 
 public class Browser extends JFrame implements ActionListener {
-    private int downloads;
-    private JProgressBar[] balken;
-    private JButton startButton;
+  private int downloads;
+  private JProgressBar[] balken;
+  private JButton startButton;
 
-    // Deklaration Ihrer Synchronisations-Hilfsklassen hier:
-    private final CountDownLatch startLatch;
-    private final CountDownLatch stopLatch;
+  // Deklaration Ihrer Synchronisations-Hilfsklassen hier:
+  private final CountDownLatch startLatch;
+  private final CountDownLatch stopLatch;
 
-    public Browser(int downloads) {
-        super("Mein Download-Browser");
-        this.downloads = downloads;
+  public Browser(int downloads) {
+    super("Mein Download-Browser");
+    this.downloads = downloads;
 
-        // Aufbau der GUI-Elemente:
-        balken = new JProgressBar[downloads];
-        JPanel zeilen = new JPanel(new GridLayout(downloads, 1));
+    // Aufbau der GUI-Elemente:
+    balken = new JProgressBar[downloads];
+    JPanel zeilen = new JPanel(new GridLayout(downloads, 1));
 
-        startLatch = new CountDownLatch(1);
-        stopLatch = new CountDownLatch(this.downloads);
-        for (int i = 0; i < downloads; i++) {
-            JPanel reihe = new JPanel(new FlowLayout(FlowLayout.LEADING, 0, 10));
-            balken[i] = new JProgressBar(0, 100);
-            balken[i].setPreferredSize(new Dimension(500, 20));
-            reihe.add(balken[i]);
-            zeilen.add(reihe);
+    startLatch = new CountDownLatch(1);
+    stopLatch = new CountDownLatch(this.downloads);
+    for (int i = 0; i < downloads; i++) {
+      JPanel reihe = new JPanel(new FlowLayout(FlowLayout.LEADING, 0, 10));
+      balken[i] = new JProgressBar(0, 100);
+      balken[i].setPreferredSize(new Dimension(500, 20));
+      reihe.add(balken[i]);
+      zeilen.add(reihe);
 
-
-            // neue Download-Threads erzeugen und starten
-            // ggf. müssen Synchronisations-Objekte im Konstruktor übergeben werden!!
-            // balken ist ebenfalls zu übergeben!
-            new Thread(new Download(balken[i], startLatch, stopLatch)).start();
-            balken[i].setValue(1);
-        }
-
-        startButton = new JButton("Downloads starten");
-        startButton.addActionListener(this);
-
-        this.add(zeilen, BorderLayout.CENTER);
-        this.add(startButton, BorderLayout.SOUTH);
-
-
-        pack();
-        setVisible(true);
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
+      // neue Download-Threads erzeugen und starten
+      // ggf. müssen Synchronisations-Objekte im Konstruktor übergeben werden!!
+      // balken ist ebenfalls zu übergeben!
+      new Thread(new Download(balken[i], startLatch, stopLatch)).start();
+      balken[i].setValue(1);
     }
 
-    public static void main(String[] args) throws InterruptedException {
-        new Browser(5);
-    }
+    startButton = new JButton("Downloads starten");
+    startButton.addActionListener(this);
 
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        // Blockierte Threads jetzt laufen lassen:
-        startLatch.countDown();
+    this.add(zeilen, BorderLayout.CENTER);
+    this.add(startButton, BorderLayout.SOUTH);
 
-        startButton.setEnabled(false);
-        startButton.setSelected(false);
-        startButton.setText("Downloads laufen...");
+    pack();
+    setVisible(true);
+    setDefaultCloseOperation(EXIT_ON_CLOSE);
+  }
 
-        // Auf Ende aller Download-Threads warten ... erst dann die Beschriftung ändern
-        // Achtung, damit die Oberflaeche "reaktiv" bleibt dies in einem eigenen Runnable ausfuehren!
-        new Thread(() -> {
-            try {
+  public static void main(String[] args) throws InterruptedException {
+    new Browser(5);
+  }
+
+  @Override
+  public void actionPerformed(ActionEvent e) {
+    // Blockierte Threads jetzt laufen lassen:
+    startLatch.countDown();
+
+    startButton.setEnabled(false);
+    startButton.setSelected(false);
+    startButton.setText("Downloads laufen...");
+
+    // Auf Ende aller Download-Threads warten ... erst dann die Beschriftung ändern
+    // Achtung, damit die Oberflaeche "reaktiv" bleibt dies in einem eigenen Runnable ausfuehren!
+    new Thread(
+            () -> {
+              try {
                 stopLatch.await();
-            } catch (InterruptedException ex) {
+              } catch (InterruptedException ex) {
                 throw new RuntimeException(ex);
-            }
-            startButton.setText("ENDE");
-        }).start();
-    }
-
+              }
+              startButton.setText("ENDE");
+            })
+        .start();
+  }
 }
